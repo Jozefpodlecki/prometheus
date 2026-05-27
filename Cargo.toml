@@ -1,0 +1,26 @@
+[package]
+name = "prometheus-disassembler"
+version = "0.1.0"
+edition = "2024"
+license = "CC0-1.0"
+description = "A high-assurance, deterministic, zero-allocation x86-64 disassembly engine."
+authors = ["My Love Returns"]
+repository = "https://github.com/mylovereturns/prometheus"
+readme = "README.md"
+keywords = ["disassembler", "x86_64", "x86", "reverse-engineering", "binary-analysis"]
+categories = ["parser-implementations", "hardware-support", "no-std"]
+
+[lib]
+name = "prometheus_disassembler"
+crate-type = ["rlib", "staticlib"]
+
+[[bench]]
+name = "decode_bench"
+harness = false
+
+[dependencies]
+
+[dev-dependencies]
+capstone = "0.14.0"
+criterion = "0.8.2"
+zydis = "4.1.1"

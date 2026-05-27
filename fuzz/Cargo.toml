@@ -1,0 +1,21 @@
+[package]
+name = "prometheus-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+zydis = "4.1.1"
+
+[dependencies.prometheus-disassembler]
+path = ".."
+
+[[bin]]
+name = "decode_loop"
+path = "fuzz_targets/decode_loop.rs"
+test = false
+doc = false

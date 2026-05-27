@@ -1,0 +1,25 @@
+/target
+/fuzz/target
+/fuzz/artifacts
+/fuzz/corpus
+*.rs.bk
+
+# OS/IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Logs and Debug
+errors.txt
+output.txt
+*.log
+
+# C-bindings build artifacts (if compiled manually in root)
+*.o
+*.obj
+*.dll
+*.so
+*.dylib
+*.lib
+*.exp

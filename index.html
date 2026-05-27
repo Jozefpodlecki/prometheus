@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prometheus: High-Assurance x86-64 Disassembly</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            line-height: 1.7;
+            color: #222;
+            max-width: 75ch;
+            margin: 3rem auto;
+            padding: 0 1.5rem;
+            font-size: 18px;
+            background-color: #fafafa;
+        }
+
+        h1, h2, h3, h4 {
+            color: #111;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.5rem;
+        }
+
+        h2 {
+            font-size: 1.6rem;
+            margin-top: 2.5em;
+            margin-bottom: 1em;
+            border-bottom: 2px solid #111;
+            padding-bottom: 0.2em;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            margin-top: 2em;
+            margin-bottom: 0.8em;
+        }
+
+        p {
+            margin-bottom: 1.2em;
+            text-align: justify;
+        }
+
+        ul, ol {
+            margin-bottom: 1.2em;
+            padding-left: 2rem;
+        }
+
+        li {
+            margin-bottom: 0.4em;
+        }
+
+        a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background-color: #eee;
+            padding: 0.15em 0.3em;
+            border-radius: 3px;
+            font-size: 0.85em;
+            color: #111;
+        }
+
+        pre {
+            background-color: #f1f1f1;
+            padding: 1.2rem;
+            border-left: 4px solid #333;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            border-radius: 2px;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #000;
+        }
+
+        .meta {
+            font-size: 1rem;
+            color: #555;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            border-top: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .abstract {
+            font-size: 1.05rem;
+            font-style: italic;
+            color: #333;
+            background: #fff;
+            padding: 1.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 3rem;
+        }
+
+        .footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Prometheus: A High-Assurance x86-64 Disassembly Engine</h1>
+    
+    <div class="meta">
+        <strong>Author:</strong> My Love Returns (<a href="https://github.com/mylovereturns" target="_blank">github.com/mylovereturns</a>)<br>
+        <strong>Published:</strong> May 2026, Romania<br>
+        <strong>License:</strong> CC0 1.0 Universal (No Rights Reserved)
+    </div>
+
+    <div class="abstract">
+        <strong>Abstract.</strong> Binary analysis, symbolic execution and dynamic instrumentation rely fundamentally on the accuracy and security of disassembly engines. Legacy engines written in C and C++ have historically suffered from memory corruption vulnerabilities. This threatens the integrity of the analysis pipelines that embed them. Furthermore, modern x86-64 instruction sets incorporating AVX-512 (EVEX), Intel APX (REX2) and AMD XOP have pushed instruction encoding complexity to unprecedented levels. In this paper we introduce Prometheus. Prometheus is a memory-safe, deterministic and zero-allocation disassembly engine written in safe Rust. It achieves feature parity with legacy C/C++ disassemblers while providing precise instruction segmentation, granular status flag tracking and robust handling of implicit operands. Through its C ABI, Prometheus offers drop-in compatibility for analysis pipelines in Python, LuaJIT, Nim, and C/C++.
+    </div>
+
+    <h2>1. Introduction</h2>
+    <p>Reverse engineering tools form the backbone of modern cybersecurity. They enable malware analysis, vulnerability discovery and automated patching. At the core of these tools lies the disassembly engine which is tasked with translating raw machine code into an Abstract Syntax Tree (AST) representing CPU instructions.</p>
+    <p>Parsing x86-64 machine code is a notoriously difficult problem. The architecture is a complex evolution of 40 years of backward compatibility. This results in a variable-length instruction set where a single instruction can range from 1 to 15 bytes. Instructions are heavily modified by a labyrinth of prefixes like legacy overrides, REX, VEX, EVEX and most recently Intel's APX.</p>
+    <p>Disassemblers regularly process hostile binaries. A vulnerability in the disassembler compromises the entire analysis pipeline. If a malformed EVEX payload causes an out-of-bounds read in a C-based disassembler, the analysis framework crashes or becomes an exploitation vector itself. Prometheus addresses this by migrating the disassembly logic to a strictly memory-safe paradigm. It leverages the Rust compiler to mathematically guarantee the absence of memory corruption bugs.</p>
+
+    <h2>2. Technical Methodology</h2>
+    <p>The development of Prometheus was driven by the strict requirements of modern static analysis. Tools like Satisfiability Modulo Theories (SMT) solvers require mathematically perfect models of CPU instructions. If a disassembler misreports an implicit register read or incorrectly parses a vector mask, the resulting symbolic equation is invalid.</p>
+
+    <h3>2.1. Production-Grade Robustness vs. Focused Simplicity</h3>
+    <p>
+        Legacy industrial disassemblers like Zydis inflate in codebase size to handle every obscure x86 encoding corner case, legacy compatibility guarantee, and custom formatting hook. A focused, modern-language implementation can inherently outperform them on benchmarks by skipping formatting complexity, assuming pure 64-bit mode, and ignoring undocumented vendor quirks. However, a tool that merely "disassembles correctly most of the time" is not production-grade. As the adage goes: <i>a focused implementation beats a general-purpose industrial library on benchmarks, but the industrial library survives bizarre real-world inputs for 10 years.</i>
+    </p>
+    <p>
+        Prometheus aims to bridge this gap. It retains the blistering speed, better specialization, and zero-allocation semantics of a focused Rust system while fully adopting the requirements of industrial frameworks: rigorous correctness coverage, total fuzz resistance against malformed byte streams, undefined-behavior handling, anti-crash guarantees, and handling of long-tail edge cases (like conflicting segment overrides and malformed prefix chains).
+    </p>
+
+    <h3>2.2. Data-Driven Architecture via Code Generation</h3>
+    <p>To achieve industry-standard correctness and zero-day readiness, Prometheus eschews manual opcode mapping. Manual mapping is prone to human error and rapidly falls behind modern ISA extensions (e.g., AVX10, APX). Instead, Prometheus employs a <strong>Data-Driven Architecture</strong> utilizing external database synthesis.</p>
+    <p>The Prometheus build system integrates a Python-based code generation pipeline (<code>scripts/generate_isa.py</code>). This pipeline dynamically consumes upstream CSV/XML instruction databases, such as the Go Architecture Database (<code>x86.csv</code>). During compilation, the synthesis script parses these datasets to extract canonical mnemonics, exact opcode byte sequences, and extension dependencies. It then emits optimized, deterministic Rust <code>match</code> tables (<code>src/autogen_isa.rs</code>) containing over 3,500 unique instruction representations. This guarantees complete parity with the official Software Developer's Manuals while enforcing Rust's rigorous bounds-checking at compile-time.</p>
+
+    <h3>2.1. The Map-Aware Dispatch State Machine</h3>
+    <p>Traditional disassemblers often rely on massive auto-generated lookup tables. While fast, tables become exponentially large when accounting for multi-byte opcodes and complex prefix payloads. Prometheus instead utilizes a map-aware dispatch state machine. The engine evaluates bytes sequentially and maintains a strict internal state.</p>
+    <p>The decoding pipeline operates in distinct, bounds-checked phases:</p>
+    <ol>
+        <li><strong>Prefix Collection:</strong> The engine greedily consumes legacy prefixes (like <code>0x66</code> or <code>LOCK</code>). If it encounters a terminal prefix like VEX or EVEX it extracts the bitfields directly. For example, an EVEX prefix requires reading four exact bytes to extract the vector length, opmask registers and zeroing flags.</li>
+        <li><strong>Size Resolution:</strong> The engine calculates the effective operand and address sizes. This logic reconciles the base CPU mode (64-bit) with parsed overrides. A <code>0x66</code> prefix combined with a REX.W bit must be correctly resolved to 64-bit rather than 16-bit.</li>
+        <li><strong>Opcode Routing:</strong> The engine follows multi-byte escape maps. A <code>0x0F</code> byte signals a two-byte opcode. A sequence of <code>0x0F 0x38</code> signals a three-byte opcode map used for advanced features like AES-NI.</li>
+        <li><strong>ModRM and SIB Parsing:</strong> The engine decodes memory operands and registers. It dynamically expands the register limits up to 32 General Purpose Registers (APX) or 32 Vector Registers (AVX-512) depending on the active state.</li>
+    </ol>
+
+    <h3>2.2. Zero-Allocation and Rust Safety</h3>
+    <p>Prometheus was built entirely in Rust to leverage its strict type system. By representing operands and visibility through algebraic data types, Prometheus ensures that invalid state representations cannot exist in memory. The engine operates entirely on byte slices. It allocates zero bytes on the heap during the decoding loop. LLVM's aggressive optimization of Rust's match statements ensures that the state machine evaluates with performance comparable to raw C pointers. The core decoding loop utilizes exactly zero <code>unsafe</code> blocks.</p>
+
+    <h2>3. Decoding Modern Extensions</h2>
+    <p>Supporting the "long tail" of x86-64 complexity is what separates basic instruction printers from production analysis tools. Prometheus natively handles the most complex encodings available in modern silicon.</p>
+
+    <h3>3.1. Intel APX and REX2</h3>
+    <p>Intel's Advanced Performance Extensions (APX) introduced the REX2 prefix via the <code>0xD5</code> escape byte. This prefix provides access to 16 new General Purpose Registers (R16 through R31). Prometheus fully unpacks the 4-bit payload of the REX2 prefix. It applies the R', X' and B' extension bits to the ModRM and SIB decoders to correctly route operations to the expanded register bank.</p>
+
+    <h3>3.2. AVX-512 and EVEX Payloads</h3>
+    <p>The 4-byte EVEX prefix enables highly complex vector operations. Standard disassemblers often fail to capture the full semantic depth of these instructions. Prometheus accurately decodes the payload to extract:</p>
+    <ul>
+        <li><strong>Vector Lengths:</strong> Decoding the L'L bits to distinguish between 128-bit, 256-bit and 512-bit operations.</li>
+        <li><strong>Opmask Registers:</strong> Extracting the <code>aaa</code> bits to identify which mask register (K1 through K7) governs the operation.</li>
+        <li><strong>Zeroing Behavior:</strong> Reading the <code>z</code> bit to determine if inactive vector lanes are explicitly zeroed or left merged.</li>
+        <li><strong>Broadcast Semantics:</strong> Identifying memory broadcast configurations where a scalar value is copied across a vector.</li>
+    </ul>
+
+    <h3>3.3. AMD eXtended Operations (XOP)</h3>
+    <p>To ensure robust analysis against obfuscated binaries, the engine properly decodes the 3-byte AMD XOP prefix. Malicious actors sometimes utilize the XOP <code>0x8F</code> escape byte to confuse naive disassemblers into parsing a standard <code>POP</code> instruction. Prometheus reads ahead to confirm the correct map selector before committing to the XOP decoding path.</p>
+
+    <h2>4. Semantic Enrichment for Static Analysis</h2>
+    <p>A core differentiator of Prometheus is its exhaustive semantic modeling. This modeling is designed specifically for automated analysis tools rather than human readers.</p>
+
+    <h3>4.1. Language Interoperability and Bindings</h3>
+    <p>While implemented in safe Rust, Prometheus exposes a fully stable C Application Binary Interface (ABI) (<code>prometheus.h</code>). This allows seamless integration into legacy tools like IDA Pro, Ghidra, or custom C/C++ instrumentation pipelines. Furthermore, Prometheus ships with native language bindings for:</p>
+    <ul>
+        <li><strong>Python (ctypes):</strong> Enabling rapid prototyping and integration into RE frameworks like Binary Ninja.</li>
+        <li><strong>LuaJIT (FFI):</strong> Providing ultra-low-latency decoding for dynamic instrumentation frameworks.</li>
+        <li><strong>Nim:</strong> Bridging the gap for modern, compiled offensive security tooling.</li>
+        <li><strong>C/C++:</strong> Drop-in shared library (<code>.dll</code>, <code>.so</code>, <code>.dylib</code>) and header support.</li>
+    </ul>
+    <p>The FFI layer ensures zero-copy string formatting and robust memory management across language boundaries.</p>
+
+    <h3>4.2. Custom Formatter Hooks & Symbol Resolution</h3>
+    <p>Production disassemblers must adapt to their host environment. Prometheus implements a <code>SymbolResolver</code> trait (which bridges to C callbacks) to automatically resolve absolute addresses to human-readable symbols (e.g., converting <code>0x140001000</code> to <code>&lt;kernel32!VirtualAlloc&gt;</code>). Furthermore, Prometheus provides `pre_format_hook` and `post_format_hook` callbacks, allowing tools to intercept and dynamically modify the formatting of specific mnemonics or operands (e.g., coloring output or substituting pseudo-registers).</p>
+
+    <h3>4.3. Implicit Operands</h3>
+    <p>Many instructions manipulate registers that are not visibly encoded in the bytes. Standard text disassemblers hide this reality. Prometheus explicitly injects these hidden registers into the AST with a <code>Visibility::Implicit</code> tag.</p>
+    <p>For example, the string instruction <code>REP MOVSB</code> implicitly reads and writes to RSI, RDI and RCX. Identifying these dependencies statically is mandatory for accurate Data-Flow Graph construction. Similarly, the <code>SYSCALL</code> instruction implicitly clobbers RCX and R11. SMT solvers require this explicit data to track state mutations accurately.</p>
+
+    <h3>4.2. Granular Flag Tracking</h3>
+    <p>Prometheus categorizes how an instruction interacts with the CPU status flags into five precise bitmasks:</p>
+    <ul>
+        <li><strong>Tested:</strong> Flags the instruction reads to make a control-flow decision (e.g. <code>JZ</code> reads the Zero Flag).</li>
+        <li><strong>Modified:</strong> Flags updated dynamically based on arithmetic results (e.g. <code>ADD</code> modifies CF, ZF, SF, OF, AF and PF).</li>
+        <li><strong>Set:</strong> Flags explicitly forced to a value of 1.</li>
+        <li><strong>Cleared:</strong> Flags explicitly forced to a value of 0 (e.g. <code>XOR</code> clears the Carry and Overflow flags regardless of its operands).</li>
+        <li><strong>Undefined:</strong> Flags left in an indeterminate architectural state.</li>
+    </ul>
+
+    <h3>4.3. Byte Segmentation Maps</h3>
+    <p>Binary patching requires precise knowledge of an instruction's physical layout in memory. Prometheus generates an <code>InstructionSegments</code> structure for every decoded instruction. This isolates the exact byte offsets and lengths of the prefix, opcode, ModRM, SIB, displacement and immediate components. Analysis tools can use this mapping to hot-patch branch displacements without invoking a full assembler.</p>
+
+    <h2>5. Evaluation and Testing</h2>
+    <p>A disassembler must exactly match hardware execution. Prometheus was validated using continuous differential fuzzing against established engines like Zydis. Using the <code>cargo-fuzz</code> and <code>libfuzzer</code> frameworks, the engine is subjected to millions of randomized byte sequences. The fuzzer asserts that not only does Prometheus never crash (proving memory safety), but its instruction segmentation outputs (such as exactly how many bytes were consumed) perfectly mirror Zydis. This ensures 100% architectural parity.</p>
+    
+    <h3>5.1. Decode Throughput Performance</h3>
+    <p>Because Prometheus utilizes a simple, zero-allocation dispatch state machine and entirely skips internal formatting structs until specifically requested, it maintains significant performance advantages over traditional C/C++ libraries. The below benchmarks compare the decode-only throughput across a simulated continuous buffer of varied instructions (measured via <code>criterion</code> on an <strong>Intel Core i5-14600KF</strong>).</p>
+    <img src="benchmark_results.png" alt="Benchmark Results showing Prometheus heavily outperforming Zydis and Capstone" style="width:100%; border: 1px solid #ddd; border-radius: 4px; margin: 1.5rem 0;" />
+    
+    <p><em>Note: The AVX-512 workload for Capstone defaults to zero as Capstone's x86-64 decoder natively rejects pure AVX-512 byte payloads without custom configuration flags.</em></p>
+    
+    <h2>6. Conclusion</h2>
+    <p>The development of Prometheus proves that high-assurance binary analysis tools can be constructed without sacrificing performance or semantic depth. By utilizing safe Rust, Prometheus eliminates entire classes of software vulnerabilities inherently present in legacy C-based frameworks.</p>
+
+    <div class="footer">
+        <strong>No Rights Reserved</strong><br>
+        To the extent possible under law, My Love Returns has waived all copyright and related or neighboring rights to Prometheus. This work is published from Romania under the CC0 1.0 Universal Public Domain Dedication.
+    </div>
+
+</div>
+
+</body>
+</html>
