@@ -23,8 +23,8 @@ pub enum DecoderError {
     InstructionTooLong { offset: usize },
 }
 
-impl std::fmt::Display for DecoderError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for DecoderError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::TruncatedInstruction { offset } => write!(f, "truncated instruction at offset {}", offset),
             Self::InvalidOpcode { offset, opcode } => write!(f, "invalid opcode {:#04x} at offset {}", opcode, offset),
@@ -36,6 +36,6 @@ impl std::fmt::Display for DecoderError {
     }
 }
 
-impl std::error::Error for DecoderError {}
+impl core::error::Error for DecoderError {}
 
-pub type Result<T> = std::result::Result<T, DecoderError>;
+pub type Result<T> = core::result::Result<T, DecoderError>;

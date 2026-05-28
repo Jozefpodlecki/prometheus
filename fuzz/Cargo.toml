@@ -3,16 +3,15 @@ name = "prometheus-fuzz"
 version = "0.0.0"
 publish = false
 edition = "2024"
+rust-version = "1.94.0"
 
 [package.metadata]
 cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-zydis = "4.1.1"
-
-[dependencies.prometheus-disassembler]
-path = ".."
+zydis = { workspace = true }
+prometheus-disassembler = { path = "../disassembler" }
 
 [[bin]]
 name = "decode_loop"

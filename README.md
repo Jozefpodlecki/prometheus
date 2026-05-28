@@ -1,5 +1,7 @@
 # Prometheus: High-Assurance x86-64 Disassembly
 
+![rustc](https://img.shields.io/badge/rustc-1.94.0-blue.svg)
+
 **Prometheus** is a memory-safe, deterministic, and zero-allocation disassembly engine written in safe Rust. It is built specifically for modern static analysis, symbolic execution, and dynamic instrumentation frameworks.
 
 ## Performance Benchmarks
@@ -8,6 +10,7 @@ Prometheus utilizes a simple, zero-allocation dispatch state machine. A benchmar
 
 ```bash
 cargo bench
+cargo run -p scripts plot-benchmarks
 ```
 
 *(See `benchmark_results.png` for a visual chart across Mixed, Legacy, and AVX-512 workloads).*

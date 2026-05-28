@@ -24,7 +24,7 @@ fuzz_target!(|data: &[u8]| {
                 "Length mismatch between Prometheus ({}) and Zydis ({}) on bytes: {:02X?}",
                 prom_insn.metadata.length,
                 zy_insn.length,
-                &data[..std::cmp::min(15, data.len())]
+                &data[..core::cmp::min(15, data.len())]
             );
         }
     }

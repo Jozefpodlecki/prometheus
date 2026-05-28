@@ -3,9 +3,9 @@
 ** This work is dedicated to the public domain under CC0 1.0 Universal.
 */
 
-use std::slice;
-use std::ffi::{c_char, CString, c_void};
-use std::ptr;
+use core::slice;
+use core::ffi::{c_char, CStr, c_void};
+use core::ptr;
 use crate::isa::Architecture;
 use crate::decoder::Decoder;
 use crate::formatter::{Formatter, Syntax, SymbolResolver};
@@ -71,7 +71,7 @@ impl SymbolResolver for CSymbolResolverAdapter {
         let success = (self.c_resolver.resolve)(self.c_resolver.context, address, buffer.as_mut_ptr() as *mut c_char, buffer.len());
         if success {
             unsafe {
-                Some(std::ffi::CStr::from_ptr(buffer.as_ptr() as *const c_char).to_string_lossy().into_owned())
+                Some(core::ffi::CStr::from_ptr(buffer.as_ptr() as *const c_char).to_string_lossy().into_owned())
             }
         } else {
             None
@@ -131,7 +131,7 @@ pub unsafe extern "C" fn prom_decode_and_format(
             let mut adapter = None;
             if !resolver.is_null() {
                 adapter = Some(CSymbolResolverAdapter {
-                    c_resolver: unsafe { std::ptr::read(resolver) },
+                    c_resolver: unsafe { core::ptr::read(resolver) },
                 });
             }
             
@@ -140,19 +140,19 @@ pub unsafe extern "C" fn prom_decode_and_format(
             }
 
             let formatted = fmt.format(&instruction);
-            let c_str = match CString::new(formatted) {
-                Ok(s) => s,
-                Err(_) => return false,
-            };
+            // let c_str = match CString::new(formatted) {
+            //     Ok(s) => s,
+            //     Err(_) => return false,
+            // };
 
-            let bytes = c_str.as_bytes_with_nul();
-            if bytes.len() > out_string_max_len {
-                return false;
-            }
+            // let bytes = c_str.as_bytes_with_nul();
+            // if bytes.len() > out_string_max_len {
+            //     return false;
+            // }
 
-            unsafe {
-                ptr::copy_nonoverlapping(bytes.as_ptr() as *const c_char, out_string, bytes.len());
-            }
+            // unsafe {
+            //     ptr::copy_nonoverlapping(bytes.as_ptr() as *const c_char, out_string, bytes.len());
+            // }
 
             true
         }
