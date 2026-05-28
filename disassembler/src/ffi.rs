@@ -4,8 +4,9 @@
 */
 
 use core::slice;
-use core::ffi::{c_char, CStr, c_void};
+use core::ffi::{c_char, c_void};
 use core::ptr;
+use std::ffi::CString;
 use crate::isa::Architecture;
 use crate::decoder::Decoder;
 use crate::formatter::{Formatter, Syntax, SymbolResolver};
@@ -140,19 +141,19 @@ pub unsafe extern "C" fn prom_decode_and_format(
             }
 
             let formatted = fmt.format(&instruction);
-            // let c_str = match CString::new(formatted) {
-            //     Ok(s) => s,
-            //     Err(_) => return false,
-            // };
+            let c_str = match CString::new(formatted) {
+                Ok(s) => s,
+                Err(_) => return false,
+            };
 
-            // let bytes = c_str.as_bytes_with_nul();
-            // if bytes.len() > out_string_max_len {
-            //     return false;
-            // }
+            let bytes = c_str.as_bytes_with_nul();
+            if bytes.len() > out_string_max_len {
+                return false;
+            }
 
-            // unsafe {
-            //     ptr::copy_nonoverlapping(bytes.as_ptr() as *const c_char, out_string, bytes.len());
-            // }
+            unsafe {
+                ptr::copy_nonoverlapping(bytes.as_ptr() as *const c_char, out_string, bytes.len());
+            }
 
             true
         }

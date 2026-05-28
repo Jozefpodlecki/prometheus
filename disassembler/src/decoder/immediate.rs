@@ -1,3 +1,5 @@
+use stackvector::StackVec;
+
 use crate::decoder::session::DecodeSession;
 use crate::decoder::register;
 use crate::decoder::types::*;
@@ -15,7 +17,7 @@ pub fn handle_immediate_operands(
     xop: &Xop,
     eff_op_size: OperandSize,
     arch: Architecture,
-    operands: &mut Vec<Operand>,
+    operands: &mut StackVec<[Operand; 4]>,
 ) -> Result<()> {
     if is_two_byte {
         if (0x80..=0x8F).contains(&opcode) {

@@ -8,18 +8,17 @@
 ** It contains the raw bytes, prefixes, and high-level semantic
 ** information required for static analysis.
 */
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Instruction {
     /* The virtual address where the instruction is located. */
     pub address: u64,
     /* The full sequence of bytes forming the instruction. */
-    pub bytes: Vec<u8>,
+    pub bytes: StackVec<[u8; 15]>,
     /* The legacy and REX prefixes detected during decoding. */
-    pub prefixes: Vec<u8>,
+    pub prefixes: StackVec<[u8; 4]>,
     /* The primary instruction mnemonic. */
     pub mnemonic: Mnemonic,
     /* Explicit, implicit, and hidden operands. */
-    pub operands: Vec<Operand>,
+    pub operands: StackVec<[Operand; 4]>,
     /* Architecture-specific classification and flag effects. */
     pub metadata: InstructionMetadata,
     /* Detailed breakdown of the instruction's byte segments. */
@@ -45,6 +44,8 @@ pub struct SegmentInfo {
     pub offset: u8,
     pub length: u8,
 }
+
+use stackvector::StackVec;
 
 use crate::autogen_isa::AutoMnemonic;
 

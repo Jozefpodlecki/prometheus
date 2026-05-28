@@ -21,6 +21,8 @@ pub enum DecoderError {
     
     /* Instruction exceeds the 15-byte x86 limit. */
     InstructionTooLong { offset: usize },
+
+    TooManyPrefixes { offset: usize },
 }
 
 impl core::fmt::Display for DecoderError {
@@ -32,6 +34,7 @@ impl core::fmt::Display for DecoderError {
             Self::UnsupportedEncoding { offset } => write!(f, "unsupported encoding at offset {}", offset),
             Self::CorruptStream { offset } => write!(f, "corrupt stream at offset {}", offset),
             Self::InstructionTooLong { offset } => write!(f, "instruction too long at offset {}", offset),
+            Self::TooManyPrefixes { offset } => write!(f, "too many prefixes {}", offset),
         }
     }
 }

@@ -9,6 +9,7 @@ mod branch;
 mod implicit;
 mod types;
 
+use stackvector::StackVec;
 pub use types::*;
 
 use crate::decoder::session::DecodeSession;
@@ -42,7 +43,7 @@ impl Decoder {
         address: u64,
     ) -> Result<Instruction> {
         let mut session = DecodeSession::new(input);
-        let mut prefixes = Vec::new();
+        let mut prefixes = StackVec::new();
         let mut segments = InstructionSegments::default();
         let mut rex = Rex::default();
         let mut rex2 = Rex2::default();
@@ -127,7 +128,7 @@ impl Decoder {
         let cf = opcode_info.control_flow;
         let has_modrm = opcode_info.has_modrm;
 
-        let mut operands = Vec::new();
+        let mut operands: StackVec<[Operand; 4]> = StackVec::new();
 
         let vector_len: u16 = if evex.present {
             match evex.l {
@@ -255,7 +256,12 @@ impl Decoder {
         }
 
         let length = session.cursor as u8;
-        let instruction_bytes = input[..session.cursor].to_vec();
+
+        if session.cursor > 15 {
+            return Err(DecoderError::InstructionTooLong { offset: session.cursor });
+        }
+
+        let bytes = StackVec::<[u8; 15]>::from_slice(&input[..session.cursor]);
 
         let has_xacquire = has_repne
             && has_lock
@@ -273,7 +279,7 @@ impl Decoder {
 
         let mut instruction = Instruction {
             address,
-            bytes: instruction_bytes,
+            bytes,
             prefixes,
             mnemonic,
             operands,
@@ -345,7 +351,7 @@ impl Decoder {
     fn parse_prefixes(
         &self,
         session: &mut DecodeSession,
-        prefixes: &mut Vec<u8>,
+        prefixes: &mut StackVec<[u8; 4]>,
         rex: &mut Rex,
         rex2: &mut Rex2,
         vex: &mut Vex,
@@ -543,6 +549,11 @@ impl Decoder {
                     PREFIX_GS_OVERRIDE => *segment_override = Some(Segment::GS),
                     _ => {}
                 }
+
+                if prefixes.len() > 3 {
+                    return Err(DecoderError::TooManyPrefixes { offset: session.cursor });
+                }
+
                 prefixes.push(session.read_u8()?);
                 continue;
             }
